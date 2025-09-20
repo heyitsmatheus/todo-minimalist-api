@@ -1,3 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Todo.Minimalist.Api.Models;
 
-public record TodoItem(Guid Id, string Title, bool IsDone);
+public class TodoItem
+{
+    [Key]
+    public Guid Id { get; set; }
+    
+    [Required]
+    public string Title { get; set; }
+    public bool IsDone { get; set; }
+}

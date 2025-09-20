@@ -1,25 +1,47 @@
 # ✅ Todo Minimalist
 
-Uma **API minimalista de lista de tarefas (To-Do)** criada em **.NET 10**, com foco em:
-- Explorar as **novidades do .NET 10** e o modelo de **Minimal APIs**.
-- Implementar **CRUD completo** em memória na primeira etapa.
-- Configurar **Integração Contínua (CI)** usando **GitHub Actions**.
+![.NET](https://img.shields.io/badge/.NET-10-blue)
+![SQLite](https://img.shields.io/badge/SQLite-lightgrey)
+![GitHub Actions](https://img.shields.io/badge/CI-CD-green)
+
+Uma **API minimalista de lista de tarefas (To-Do)** criada em **.NET 10**, com foco em:  
+- Explorar as **novidades do .NET 10** e o modelo de **Minimal APIs**.  
+- Implementar **CRUD completo**, agora com **persistência em SQLite**.  
+- Configurar **Integração Contínua (CI)** usando **GitHub Actions**.  
 
 ---
 
 ## 🚀 Funcionalidades
-- Criar, listar, atualizar e excluir tarefas (CRUD).
-- Estrutura simples, ideal para estudos.
-- Documentação automática via Swagger/OpenAPI.
-- Pipeline de build e testes no GitHub Actions.
+| Funcionalidade | Status |
+|----------------|--------|
+| Criar tarefas | ✅ |
+| Listar tarefas | ✅ |
+| Atualizar tarefas | ✅ |
+| Excluir tarefas | ✅ |
+| Persistência SQLite via EF Core | ✅ |
+| Swagger/OpenAPI | ✅ |
+| GitHub Actions CI | ✅ |
+
+---
+
+## 💾 Banco de Dados
+- A API utiliza **SQLite**, leve e sem necessidade de instalação adicional.  
+- O banco (`todo.db`) é criado automaticamente na primeira execução.  
+- Tabelas gerenciadas com **EF Core Migrations**:
+
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef database update
 
 ---
 
 ## 🧠 Objetivo do Projeto
+
 Servir como laboratório para:
-- Testar **novos recursos do .NET 10**.
-- Praticar **boas práticas de desenvolvimento** e **integração contínua**.
-- Evoluir gradualmente para banco de dados, autenticação e deploy em nuvem.
+
+- Testar novos recursos do .NET 10.
+- Praticar boas práticas de desenvolvimento e integração contínua.
+- Evoluir gradualmente para recursos avançados de backend e DevOps.
 
 ---
 

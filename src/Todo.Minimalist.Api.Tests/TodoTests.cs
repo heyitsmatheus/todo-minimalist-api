@@ -7,7 +7,7 @@ public class TodoTests
     [Fact]
     public void CanCreateTodoItem()
     {
-        var todo = new TodoItem(Guid.NewGuid(), "Estudar .NET 10", false);
+        var todo = new TodoItem() { Id = Guid.NewGuid(), Title = "Estudar .NET 10", IsDone = false };
         Assert.Equal("Estudar .NET 10", todo.Title);
         Assert.False(todo.IsDone);
     }

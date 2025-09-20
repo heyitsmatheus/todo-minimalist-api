@@ -1,6 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+using Todo.Minimalist.Api.Data;
 using Todo.Minimalist.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<TodoDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -12,32 +17,46 @@ app.UseSwaggerUI();
 
 var todos = new List<TodoItem>();
 
-app.MapGet("/todos", () => todos);
+app.MapGet("/todos", async (TodoDbContext db) =>
+    await db.TodoItems.ToListAsync());
 
-app.MapGet("/todos/{id}", (Guid id) =>
-    todos.FirstOrDefault(t => t.Id == id) is { } todo
+app.MapGet("/todos/{id}", async (Guid id, TodoDbContext db) =>
+    await db.TodoItems.FindAsync(id) is TodoItem todo
         ? Results.Ok(todo)
         : Results.NotFound());
 
-app.MapPost("/todos", (TodoItem todo) =>
+app.MapPost("/todos", async (TodoItem todo, TodoDbContext db) =>
 {
-    var newTodo = todo with { Id = Guid.NewGuid() };
-    todos.Add(newTodo);
-    return Results.Created($"/todos/{newTodo.Id}", newTodo);
+    todo.Id = Guid.NewGuid();
+    db.TodoItems.Add(todo);
+    await db.SaveChangesAsync();
+    return Results.Created($"/todos/{todo.Id}", todo);
 });
 
-app.MapPut("/todos/{id}", (Guid id, TodoItem updated) =>
+app.MapPut("/todos/{id}", async (Guid id, TodoItem updatedTodo, TodoDbContext db) =>
 {
-    var index = todos.FindIndex(t => t.Id == id);
-    if (index == -1) return Results.NotFound();
-    todos[index] = updated with { Id = id };
+    var todo = await db.TodoItems.FindAsync(id);
+    
+    if (todo is null) 
+        return Results.NotFound();
+
+    todo.Title = updatedTodo.Title;
+    todo.IsDone = updatedTodo.IsDone;
+
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
-app.MapDelete("/todos/{id}", (Guid id) =>
+app.MapDelete("/todos/{id}", async (Guid id, TodoDbContext db) =>
 {
-    var removed = todos.RemoveAll(t => t.Id == id);
-    return removed > 0 ? Results.NoContent() : Results.NotFound();
+    var todo = await db.TodoItems.FindAsync(id);
+    
+    if (todo is null) 
+        return Results.NotFound();
+
+    db.TodoItems.Remove(todo);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
 });
 
 app.Run();

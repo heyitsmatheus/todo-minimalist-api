@@ -11,6 +11,10 @@ builder.Services.AddDbContext<TodoDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 var app = builder.Build();
 
 app.UseMiddleware<ErrorHandlerMiddleware>();

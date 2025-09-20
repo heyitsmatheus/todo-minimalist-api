@@ -21,4 +21,4 @@ jobs:
         run: dotnet build --configuration Release src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
 
       - name: Test
-        run: dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj --no-build --framework net10.0 --verbosity normal
+        run: dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj --no-build --verbosity normal

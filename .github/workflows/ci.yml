@@ -15,13 +15,10 @@ jobs:
           dotnet-version: '10.x.x'
 
       - name: Restore
-        run: dotnet restore
-        working-directory: src
+        run: dotnet restore src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: src
+        run: dotnet build --configuration Release src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
 
       - name: Test
-        run: dotnet test --no-build --verbosity normal
-        working-directory: src
+        run: dotnet test src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln --no-build --verbosity normal

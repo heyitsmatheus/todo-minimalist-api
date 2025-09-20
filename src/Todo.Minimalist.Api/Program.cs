@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Todo.Minimalist.Api.Data;
+using Todo.Minimalist.Api.Middlewares;
 using Todo.Minimalist.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,8 +13,11 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseMiddleware<ErrorHandlerMiddleware>();
+
 app.UseSwagger();
 app.UseSwaggerUI();
+
 
 app.MapGet("/todos", async (TodoDbContext db) =>
     await db.TodoItems.ToListAsync());

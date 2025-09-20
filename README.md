@@ -32,6 +32,7 @@ Uma **API minimalista de lista de tarefas (To-Do)** criada em **.NET 10**, com f
 ```bash
 dotnet ef migrations add InitialCreate
 dotnet ef database update
+```
 
 ---
 

@@ -3,13 +3,8 @@ using Todo.Minimalist.Api.Models;
 
 namespace Todo.Minimalist.Api.Data
 {
-    public class TodoDbContext : DbContext
+    public class TodoDbContext(DbContextOptions<TodoDbContext> options) : DbContext(options)
     {
-        public TodoDbContext(DbContextOptions<TodoDbContext> options)
-            : base(options)
-        {
-        }
-
         public DbSet<TodoItem> TodoItems { get; set; }
     }
 }

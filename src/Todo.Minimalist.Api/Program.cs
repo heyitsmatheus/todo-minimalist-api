@@ -15,8 +15,6 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-var todos = new List<TodoItem>();
-
 app.MapGet("/todos", async (TodoDbContext db) =>
     await db.TodoItems.ToListAsync());
 

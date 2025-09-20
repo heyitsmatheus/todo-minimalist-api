@@ -11,7 +11,7 @@ using Todo.Minimalist.Api.Data;
 namespace Todo.Minimalist.Api.Data.Migrations
 {
     [DbContext(typeof(TodoDbContext))]
-    [Migration("20250920155419_InitialCreate")]
+    [Migration("20250920161405_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

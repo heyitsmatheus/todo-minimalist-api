@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -21,7 +21,9 @@ jobs:
         run: dotnet build --configuration Release src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
 
       - name: Test
-        run: dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj \
-              --configuration Release \
-              --logger "console;verbosity=detailed" \
-              --no-build
+        run: |
+          dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj \
+            --configuration Release \
+            --logger "console;verbosity=detailed" \
+            --no-build
+

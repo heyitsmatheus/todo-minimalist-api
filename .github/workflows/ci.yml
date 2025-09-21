@@ -35,13 +35,11 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator \
+          dotnet tool restore
+          dotnet reportgenerator \
             -reports:src/TestResults/coverage/coverage.cobertura.xml \
             -targetdir:src/TestResults/coverage/html \
             -reporttypes:HtmlSummary;Badge
-        env:
-          PATH: ${{ env.PATH }}:/home/runner/.dotnet/tools
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

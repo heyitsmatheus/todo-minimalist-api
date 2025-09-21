@@ -34,7 +34,7 @@ jobs:
         run: dotnet build --configuration Release $BUILD_PROJECT --no-restore
 
       - name: Run unit tests and collect code coverage
-        run: dotnet test $TEST_PROJECT/Todo.Minimalist.Api.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage"
+        run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
         working-directory: ${{ env.TEST_PROJECT }}
 
       - name: Generate HTML coverage report from test results

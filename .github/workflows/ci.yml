@@ -34,7 +34,7 @@ jobs:
         run: |
           dotnet tool restore
           dotnet reportgenerator \
-            -reports:TestResults/coverage/coverage.cobertura.xml \
+            -reports:TestResults/*/coverage.cobertura.xml \
             -targetdir:TestResults/coverage/html \
             -reporttypes:HtmlSummary;Badge
         working-directory: src/Todo.Minimalist.Api.Tests

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using Todo.Minimalist.Api.Data;
 using Todo.Minimalist.Api.DTOs;
 using Todo.Minimalist.Api.Entities;

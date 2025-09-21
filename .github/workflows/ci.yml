@@ -17,14 +17,35 @@ jobs:
       - name: Restore
         run: dotnet restore src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
 
-      - name: Build
-        run: dotnet build --configuration Release src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
+      - name: Run dotnet format (code analysis)
+        run: dotnet format src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln --verify-no-changes --severity error
 
-      #  TODO: Action ainda não disponivel para execução dos testes em .net 10
-      # - name: Test
-      #   run: |
-      #     dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj \
-      #       --configuration Release \
-      #       --logger "console;verbosity=detailed" \
-      #       --no-build
+      - name: Build
+        run: dotnet build --configuration Release src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln --no-restore
+
+      - name: Run tests with coverage
+        run: |
+          dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj --no-build --configuration Release \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=TestResults/coverage/ \
+            /p:Threshold=80 \
+            /p:ThresholdType=line \
+            /p:FailWhenCoverageBelowThreshold=true
+
+      - name: Generate coverage report
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:src/TestResults/coverage/coverage.cobertura.xml \
+            -targetdir:src/TestResults/coverage/html \
+            -reporttypes:HtmlSummary;Badge
+        env:
+          PATH: ${{ env.PATH }}:/home/runner/.dotnet/tools
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: src/TestResults/coverage/html
 

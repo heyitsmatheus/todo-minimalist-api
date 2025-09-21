@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          cd src/Todo.Minimalist.Api
+          cd src/Todo.Minimalist.Api.Tests
           dotnet tool restore
           dotnet reportgenerator \
             -reports:TestResults/coverage/coverage.cobertura.xml \
@@ -47,5 +47,3 @@ jobs:
         with:
           name: coverage-report
           path: TestResults/coverage/html
-
-

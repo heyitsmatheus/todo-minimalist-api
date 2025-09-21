@@ -28,7 +28,7 @@ jobs:
           dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj --no-build --configuration Release \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
-            /p:CoverletOutput=TestResults/coverage/coverage.cobertura.xml \
+            /p:CoverletOutput=src/Todo.Minimalist.Api.Tests/TestResults/coverage/ \
             /p:Threshold=80 \
             /p:ThresholdType=line \
             /p:FailWhenCoverageBelowThreshold=true

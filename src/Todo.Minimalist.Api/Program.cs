@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using Todo.Minimalist.Api.Data;
 using Todo.Minimalist.Api.DTOs;
 using Todo.Minimalist.Api.Entities;
+using Todo.Minimalist.Api.Extensions;
 using Todo.Minimalist.Api.Middlewares;
 using Todo.Minimalist.Api.Models.Errors;
 
@@ -28,33 +29,15 @@ app.UseGlobalExceptionHandler(app.Logger);
 app.UseSwagger();
 app.UseSwaggerUI();
 
-static bool TryValidate<T>(T obj, out List<FieldError> errors)
-{
-    var validationResults = new List<ValidationResult>();
-    var context = new ValidationContext(obj!);
-    errors = [];
+var todoGroup = app.MapGroup("/todo");
 
-    bool isValid = Validator.TryValidateObject(obj!, context, validationResults, true);
-
-    if (!isValid)
-    {
-        errors = [.. validationResults.SelectMany(vr => vr.MemberNames.Select(m => new FieldError
-        {
-            Field = m,
-            Error = vr.ErrorMessage ?? "Invalid field"
-        }))];
-    }
-
-    return isValid;
-}
-
-app.MapGet("/todo", async (TodoDbContext db, ILogger<Program> logger) =>
+todoGroup.MapGet("/", async (TodoDbContext db, ILogger<Program> logger) =>
 {
     logger.LogInformation("Listando todas as tarefas");
     return Results.Ok(await db.TodoItems.AsNoTracking().ToListAsync());
 });
 
-app.MapGet("/todo/{id:Guid}", async (Guid id, TodoDbContext db, ILogger<Program> logger) =>
+todoGroup.MapGet("/{id:Guid}", async (Guid id, TodoDbContext db, ILogger<Program> logger) =>
 {
     var todo = await db.TodoItems.FindAsync(id);
     if (todo == null)
@@ -71,9 +54,9 @@ app.MapGet("/todo/{id:Guid}", async (Guid id, TodoDbContext db, ILogger<Program>
     return Results.Ok(todo);
 });
 
-app.MapPost("/todo", async ([FromBody] TodoItemDto dto, TodoDbContext db) =>
+todoGroup.MapPost("/", async ([FromBody] TodoItemDto dto, TodoDbContext db) =>
 {
-    if (!TryValidate(dto, out var errors))
+    if (!dto.TryValidate(out var errors))
     {
         return Results.BadRequest(new ErrorResponse
         {
@@ -96,9 +79,9 @@ app.MapPost("/todo", async ([FromBody] TodoItemDto dto, TodoDbContext db) =>
     return Results.Created($"/todo/{todo.Id}", todo);
 });
 
-app.MapPut("/todo/{id:Guid}", async (Guid id, [FromBody] TodoItemDto dto, TodoDbContext db) =>
+todoGroup.MapPut("/{id:Guid}", async (Guid id, [FromBody] TodoItemDto dto, TodoDbContext db) =>
 {
-    if (!TryValidate(dto, out var errors))
+    if (!dto.TryValidate(out var errors))
     {
         return Results.BadRequest(new ErrorResponse
         {
@@ -127,7 +110,7 @@ app.MapPut("/todo/{id:Guid}", async (Guid id, [FromBody] TodoItemDto dto, TodoDb
     return Results.Ok(todo);
 });
 
-app.MapDelete("/todo/{id:Guid}", async (Guid id, TodoDbContext db) =>
+todoGroup.MapDelete("/{id:Guid}", async (Guid id, TodoDbContext db) =>
 {
     var todo = await db.TodoItems.FindAsync(id);
 

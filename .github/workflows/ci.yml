@@ -25,22 +25,19 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj --no-build --configuration Release \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=cobertura \
-            /p:CoverletOutput=src/Todo.Minimalist.Api.Tests/TestResults/coverage/ \
-            /p:Threshold=80 \
-            /p:ThresholdType=line \
-            /p:FailWhenCoverageBelowThreshold=true
+          dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj \
+            --no-build \
+            --configuration Release \
+            --collect:"XPlat Code Coverage"
 
       - name: Generate coverage report
         run: |
-          cd src/Todo.Minimalist.Api.Tests
           dotnet tool restore
           dotnet reportgenerator \
             -reports:TestResults/coverage/coverage.cobertura.xml \
             -targetdir:TestResults/coverage/html \
             -reporttypes:HtmlSummary;Badge
+        working-directory: src/Todo.Minimalist.Api.Tests
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

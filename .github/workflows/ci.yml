@@ -35,15 +35,19 @@ jobs:
 
       - name: Generate coverage report
         run: |
+          cd src/Todo.Minimalist.Api
           dotnet tool restore
           dotnet reportgenerator \
-            -reports:src/TestResults/coverage/coverage.cobertura.xml \
-            -targetdir:src/TestResults/coverage/html \
+            -reports:TestResults/coverage/coverage.cobertura.xml \
+            -targetdir:TestResults/coverage/html \
             -reporttypes:HtmlSummary;Badge
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: src/TestResults/coverage/html
+          path: TestResults/coverage/html
 
+
+             dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj --configuration Release /p:CollectCoverage=true             /p:CoverletOutputFormat=cobertura             /p:CoverletOutput=TestResults/coverage/             /p:Threshold=80            /p:ThresholdType=line            /p:FailWhenCoverageBelowThreshold=true
+             dotnet reportgenerator -reports:src/TestResults/coverage/coverage.cobertura.xml -targetdir:src/TestResults/coverage/html -reporttypes:HtmlSummary;Badge

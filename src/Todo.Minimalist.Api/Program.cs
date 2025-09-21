@@ -1,134 +1,110 @@
-using FluentValidation;
-using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using Todo.Minimalist.Api.Data;
 using Todo.Minimalist.Api.DTOs;
+using Todo.Minimalist.Api.Entities;
 using Todo.Minimalist.Api.Middlewares;
-using Todo.Minimalist.Api.Models;
-using Todo.Minimalist.Api.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<TodoDbContext>(options =>
     options.UseSqlite("Data Source=Data/todo.db"));
 
-builder.Services.AddValidatorsFromAssemblyContaining<TodoItemCreateDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<TodoItemUpdateDtoValidator>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
 app.UseMiddleware<ErrorHandlerMiddleware>();
 
+app.UseSwagger();
+app.UseSwaggerUI();
 
-// -------------------------------
-// Endpoints
-// -------------------------------
-
-app.MapGet("/todos", async (TodoDbContext db, ILogger<Program> logger) =>
+app.MapGet("/todo", async (TodoDbContext db, ILogger<Program> logger) =>
 {
-    var todos = await db.TodoItems.ToListAsync();
-    
-    logger.LogInformation("Listando {Count} todos", todos.Count);
-
-    var readDtos = todos.Select(t => new TodoItemReadDto(t.Id, t.Title, t.IsDone)).ToList();
-
-    return Results.Ok(readDtos);
+    logger.LogInformation("Listando todas as tarefas");
+    return Results.Ok(await db.TodoItems.AsNoTracking().ToListAsync());
 });
 
-app.MapGet("/todos/{id:guid}", async (Guid id, TodoDbContext db, ILogger<Program> logger) =>
+app.MapGet("/todo/{id:Guid}", async (Guid id, TodoDbContext db, ILogger<Program> logger) =>
 {
     var todo = await db.TodoItems.FindAsync(id);
     if (todo == null)
     {
-        logger.LogWarning("Todo não encontrado: {Id}", id);
-        return Results.NotFound();
+        logger.LogWarning("Tarefa não encontrada: {Id}", id);
+        return Results.NotFound(new { message = "Tarefa não encontrada." });
     }
-
-    logger.LogInformation("Todo encontrado: {Id} - {Title}", todo.Id, todo.Title);
-    
-    var readDto = new TodoItemReadDto(id, todo.Title, todo.IsDone);
-
-    return Results.Ok(readDto);
+    return Results.Ok(todo);
 });
 
-app.MapPost("/todos", async (
-    TodoItemCreateDto dto,
+app.MapPost("/todo", async (
+    [FromBody] TodoItemDto dto,
     TodoDbContext db,
-    IValidator<TodoItemCreateDto> validator,
-    ILogger<Program> logger) =>
+    HttpContext http) =>
 {
-    ValidationResult result = await validator.ValidateAsync(dto);
-    if (!result.IsValid)
+    var validationResults = new List<ValidationResult>();
+    if (!Validator.TryValidateObject(dto, new ValidationContext(dto), validationResults, true))
     {
-        logger.LogWarning("Validação falhou para criação: {Title}", dto.Title);
-        var errors = result.Errors.Select(e => new { e.PropertyName, e.ErrorMessage });
-        return Results.BadRequest(errors);
+        var errors = validationResults.ToDictionary(
+            v => v.MemberNames.FirstOrDefault() ?? "",
+            v => new[] { v.ErrorMessage ?? "Invalid field" });
+
+        return Results.ValidationProblem(errors);
     }
 
-    var todo = new TodoItem
-    {
-        Id = Guid.NewGuid(),
-        Title = dto.Title,
-        IsDone = dto.IsDone
-    };
+    var todo = new TodoItem { Title = dto.Title, IsDone = dto.IsDone };
 
     db.TodoItems.Add(todo);
+
     await db.SaveChangesAsync();
-
-    logger.LogInformation("Todo criado: {Id} - {Title}", todo.Id, todo.Title);
-
-    var readDto = new TodoItemReadDto(todo.Id, todo.Title, todo.IsDone);
-
-    return Results.Created($"/todos/{todo.Id}", readDto);
+    return Results.Created($"/todo/{todo.Id}", todo);
 });
 
-app.MapPut("/todos/{id:guid}", async (
+app.MapPut("/todo/{id:Guid}", async (
     Guid id,
-    TodoItemUpdateDto dto,
+    [FromBody] TodoItemDto dto,
     TodoDbContext db,
-    IValidator<TodoItemUpdateDto> validator,
-    ILogger<Program> logger) =>
+    HttpContext http) =>
 {
-    ValidationResult result = await validator.ValidateAsync(dto);
-    if (!result.IsValid)
+    var validationResults = new List<ValidationResult>();
+    if (!Validator.TryValidateObject(dto, new ValidationContext(dto), validationResults, true))
     {
-        logger.LogWarning("Validação falhou para atualização: {Title}", dto.Title);
-        var errors = result.Errors.Select(e => new { e.PropertyName, e.ErrorMessage });
-        return Results.BadRequest(errors);
+        var errors = validationResults.ToDictionary(
+            v => v.MemberNames.FirstOrDefault() ?? "",
+            v => new[] { v.ErrorMessage ?? "Invalid field" });
+
+        return Results.ValidationProblem(errors);
     }
 
     var todo = await db.TodoItems.FindAsync(id);
+
     if (todo == null)
-    {
-        logger.LogWarning("Todo não encontrado para atualização: {Id}", id);
-        return Results.NotFound();
-    }
+        return Results.NotFound(new { message = "Tarefa não encontrada." });
 
     todo.Title = dto.Title;
     todo.IsDone = dto.IsDone;
 
     await db.SaveChangesAsync();
-
-    logger.LogInformation("Todo atualizado: {Id} - {Title}", todo.Id, todo.Title);
-
-    var readDto = new TodoItemReadDto(todo.Id, todo.Title, todo.IsDone);
-
-    return Results.Ok(readDto);
+    return Results.Ok(todo);
 });
 
-app.MapDelete("/todos/{id:guid}", async (Guid id, TodoDbContext db, ILogger<Program> logger) =>
+app.MapDelete("/todo/{id:Guid}", async (Guid id, TodoDbContext db) =>
 {
     var todo = await db.TodoItems.FindAsync(id);
+
     if (todo == null)
-    {
-        logger.LogWarning("Todo não encontrado para exclusão: {Id}", id);
-        return Results.NotFound();
-    }
+        return Results.NotFound(new { message = "Tarefa não encontrada." });
 
     db.TodoItems.Remove(todo);
-    await db.SaveChangesAsync();
 
-    logger.LogInformation("Todo excluído: {Id} - {Title}", todo.Id, todo.Title);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 

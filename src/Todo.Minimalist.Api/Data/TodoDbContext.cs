@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Todo.Minimalist.Api.Models;
+using Todo.Minimalist.Api.Entities;
 
 namespace Todo.Minimalist.Api.Data
 {

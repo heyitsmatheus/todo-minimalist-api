@@ -1,33 +1,35 @@
-﻿using System.Net;
+﻿using Microsoft.AspNetCore.Diagnostics;
+using System.Net;
 using System.Text.Json;
+using Todo.Minimalist.Api.Models.Errors;
 
-namespace Todo.Minimalist.Api.Middlewares
+namespace Todo.Minimalist.Api.Middlewares;
+
+public static class ExceptionHandlingMiddleware
 {
-    public class ErrorHandlerMiddleware(RequestDelegate next, ILogger<ErrorHandlerMiddleware> logger)
+    public static void UseGlobalExceptionHandler(this IApplicationBuilder app, ILogger logger)
     {
-        public async Task InvokeAsync(HttpContext context)
+        app.UseExceptionHandler(handlerApp =>
         {
-            try
+            handlerApp.Run(async context =>
             {
-                await next(context);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erro capturado no middleware.");
+                var feature = context.Features.Get<IExceptionHandlerFeature>();
+                var exception = feature?.Error;
 
-                context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                context.Response.ContentType = "application/json";
 
-                var response = new
+                logger.LogError(exception, "Unhandled exception");
+
+                var response = new ErrorResponse
                 {
-                    timestamp = DateTime.UtcNow,
-                    status = context.Response.StatusCode,
-                    error = ex.Message
+                    StatusCode = context.Response.StatusCode,
+                    Message = "An unexpected error occurred."
                 };
 
-                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
-            }
-        }
+                var json = JsonSerializer.Serialize(response);
+                await context.Response.WriteAsync(json);
+            });
+        });
     }
-
 }

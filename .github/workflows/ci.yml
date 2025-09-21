@@ -2,45 +2,54 @@
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      TEST_PROJECT: src/Todo.Minimalist.Api.Tests
+      BUILD_PROJECT: src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
+      COVERAGE_DIR: TestResults/coverage/html
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout source code
+        uses: actions/checkout@v5
 
-      - name: Setup .NET
+      - name: Install .NET SDK 10
         uses: actions/setup-dotnet@v5
         with:          
-            dotnet-version: '10.x.x'
+          dotnet-version: '10.x.x'
 
-      - name: Restore
-        run: dotnet restore src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
+      - name: Restore NuGet dependencies
+        run: dotnet restore $BUILD_PROJECT
 
-      - name: Run dotnet format (code analysis)
-        run: dotnet format src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln --verify-no-changes --severity error
+      - name: Analyze code style and formatting
+        run: dotnet format $BUILD_PROJECT --verify-no-changes --severity error
 
-      - name: Build
-        run: dotnet build --configuration Release src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln --no-restore
+      - name: Check for vulnerable NuGet packages
+        run: dotnet list $BUILD_PROJECT package --vulnerable
 
-      - name: Run tests with coverage
-        run: |
-          dotnet test src/Todo.Minimalist.Api.Tests/Todo.Minimalist.Api.Tests.csproj \
-            --no-build \
-            --configuration Release \
-            --collect:"XPlat Code Coverage"
+      - name: Build solution in Release mode
+        run: dotnet build --configuration Release $BUILD_PROJECT --no-restore
 
-      - name: Generate coverage report
+      - name: Run unit tests and collect code coverage
+        run: dotnet test $TEST_PROJECT/Todo.Minimalist.Api.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage"
+        working-directory: ${{ env.TEST_PROJECT }}
+
+      - name: Generate HTML coverage report from test results
         run: |
           dotnet tool restore
           dotnet reportgenerator \
             -reports:TestResults/*/coverage.cobertura.xml \
-            -targetdir:TestResults/coverage/html \
+            -targetdir:$COVERAGE_DIR \
             -reporttypes:HtmlSummary
-        working-directory: src/Todo.Minimalist.Api.Tests
+        working-directory: ${{ env.TEST_PROJECT }}
 
-      - name: Upload coverage report
+      - name: Upload HTML coverage report as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: src/Todo.Minimalist.Api.Tests/TestResults/coverage/html
+          path: ${{ env.TEST_PROJECT }}/$COVERAGE_DIR
+
+      

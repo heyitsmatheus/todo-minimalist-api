@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using Todo.Minimalist.Api.Data;
 using Todo.Minimalist.Api.DTOs;
 using Todo.Minimalist.Api.Entities;
@@ -20,36 +21,32 @@ builder.Logging.AddDebug();
 
 builder.Services.AddControllers();
 
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.InvalidModelStateResponseFactory = context =>
-    {
-        var errors = context.ModelState
-            .Where(x => x.Value?.Errors.Count > 0)
-            .SelectMany(x => x.Value!.Errors.Select(e => new FieldError
-            {
-                Field = x.Key,
-                Error = e.ErrorMessage
-            }))
-            .ToList();
-
-        var response = new ErrorResponse
-        {
-            StatusCode = StatusCodes.Status400BadRequest,
-            Message = "Validation failed",
-            Errors = errors
-        };
-
-        return new BadRequestObjectResult(response);
-    };
-});
-
 var app = builder.Build();
 
 app.UseGlobalExceptionHandler(app.Logger);
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+static bool TryValidate<T>(T obj, out List<FieldError> errors)
+{
+    var validationResults = new List<ValidationResult>();
+    var context = new ValidationContext(obj!);
+    errors = [];
+
+    bool isValid = Validator.TryValidateObject(obj!, context, validationResults, true);
+
+    if (!isValid)
+    {
+        errors = [.. validationResults.SelectMany(vr => vr.MemberNames.Select(m => new FieldError
+        {
+            Field = m,
+            Error = vr.ErrorMessage ?? "Invalid field"
+        }))];
+    }
+
+    return isValid;
+}
 
 app.MapGet("/todo", async (TodoDbContext db, ILogger<Program> logger) =>
 {
@@ -76,6 +73,17 @@ app.MapGet("/todo/{id:Guid}", async (Guid id, TodoDbContext db, ILogger<Program>
 
 app.MapPost("/todo", async ([FromBody] TodoItemDto dto, TodoDbContext db) =>
 {
+    if (!TryValidate(dto, out var errors))
+    {
+        return Results.BadRequest(new ErrorResponse
+        {
+            Timestamp = DateTime.UtcNow,
+            StatusCode = StatusCodes.Status400BadRequest,
+            Message = "Validation failed",
+            Errors = errors
+        });
+    }
+
     var todo = new TodoItem
     {
         Title = dto.Title,
@@ -90,6 +98,17 @@ app.MapPost("/todo", async ([FromBody] TodoItemDto dto, TodoDbContext db) =>
 
 app.MapPut("/todo/{id:Guid}", async (Guid id, [FromBody] TodoItemDto dto, TodoDbContext db) =>
 {
+    if (!TryValidate(dto, out var errors))
+    {
+        return Results.BadRequest(new ErrorResponse
+        {
+            Timestamp = DateTime.UtcNow,
+            StatusCode = StatusCodes.Status400BadRequest,
+            Message = "Validation failed",
+            Errors = errors
+        });
+    }
+
     var todo = await db.TodoItems.FindAsync(id);
 
     if (todo == null)

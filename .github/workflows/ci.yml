@@ -54,8 +54,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref }}-to-main
-          base: main
-          title: "Merge ${{ github.head_ref }} into main"
+          base: main        
+          branch: ${{ github.ref_name }} 
+          title: "Merge ${{ github.ref_name }} into main"
           body: "This PR was automatically created by the CI workflow."
           labels: "auto-pr"

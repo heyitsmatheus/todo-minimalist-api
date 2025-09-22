@@ -51,11 +51,12 @@ jobs:
           path: ${{ env.TEST_PROJECT }}/${{ env.COVERAGE_DIR }}
 
       - name: Create Pull Request to main
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: main                # branch de destino do PR
-          branch: ${{ github.ref_name }}  # branch de origem (feature)
-          title: "Merge ${{ github.ref_name }} into main"
+          base: main
+          branch: ${{ github.head_ref || github.ref_name }}
+          title: "Merge ${{ github.head_ref || github.ref_name }} into main"
           body: "This PR was automatically created by the CI workflow."
           labels: automated-pr, feature
+          create-if-no-existing: true

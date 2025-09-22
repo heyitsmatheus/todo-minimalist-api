@@ -60,3 +60,4 @@ jobs:
           body: "This PR was automatically created by the CI workflow."
           labels: automated-pr, feature
           create-if-no-existing: true
+          commit-message: ""  # evita commits adicionais

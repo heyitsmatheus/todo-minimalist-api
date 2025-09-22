@@ -1,0 +1,43 @@
+﻿name: Deploy Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-docker:
+    runs-on: ubuntu-latest
+    env:
+      BUILD_PROJECT: src/Todo.Minimalist.Api/Todo.Minimalist.Api.sln
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Install .NET SDK 10
+        uses: actions/setup-dotnet@v5
+        with:          
+          dotnet-version: '10.x.x'
+
+      - name: Restore NuGet dependencies
+        run: dotnet restore $BUILD_PROJECT
+
+      - name: Build and publish
+        run: dotnet publish $BUILD_PROJECT -c Release -o publish
+
+      - name: Build Docker image
+        run: |
+          docker build -t matheusgonzagax/todo-minimalist:latest -f src/Dockerfile .
+          docker tag matheusgonzagax/todo-minimalist:latest matheusgonzagax/todo-minimalist:${GITHUB_SHA::7}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image
+        run: |
+          docker push matheusgonzagax/todo-minimalist:latest
+          docker push matheusgonzagax/todo-minimalist:${GITHUB_SHA::7}

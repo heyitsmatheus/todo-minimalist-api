@@ -49,3 +49,13 @@ jobs:
         with:
           name: coverage-report
           path: ${{ env.TEST_PROJECT }}/${{ env.COVERAGE_DIR }}
+
+      - name: Create Pull Request to main
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}-to-main
+          base: main
+          title: "Merge ${{ github.head_ref }} into main"
+          body: "This PR was automatically created by the CI workflow."
+          labels: "auto-pr"

@@ -51,12 +51,13 @@ jobs:
           path: ${{ env.TEST_PROJECT }}/${{ env.COVERAGE_DIR }}
 
       - name: Create Pull Request to main
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main        
           branch: ${{ github.ref_name }} 
+          commit-message: Auto Pull Request
           title: "Merge ${{ github.ref_name }} into main"
           body: "This PR was automatically created by the CI workflow."
-          labels: "auto-pr"
+          labels: automated-pr, feature
           create-branch: false 

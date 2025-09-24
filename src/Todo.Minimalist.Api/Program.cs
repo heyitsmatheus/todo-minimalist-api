@@ -1,25 +1,71 @@
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 using Todo.Minimalist.Api.Data;
-using Todo.Minimalist.Api.DTOs;
-using Todo.Minimalist.Api.Entities;
-using Todo.Minimalist.Api.Extensions;
+using Todo.Minimalist.Api.Endpoints;
 using Todo.Minimalist.Api.Middlewares;
-using Todo.Minimalist.Api.Models.Errors;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 
 builder.Services.AddDbContext<TodoDbContext>(options =>
     options.UseSqlite("Data Source=Data/todo.db"));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Insira o token JWT no formato: Bearer {seu_token}"
+    });
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
-
-builder.Services.AddControllers();
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -28,103 +74,10 @@ app.UseGlobalExceptionHandler(app.Logger);
 app.UseSwagger();
 app.UseSwaggerUI();
 
-var todoGroup = app.MapGroup("/todo");
+app.UseAuthentication();
+app.UseAuthorization();
 
-todoGroup.MapGet("/", async (TodoDbContext db, ILogger<Program> logger) =>
-{
-    logger.LogInformation("Listando todas as tarefas");
-    return Results.Ok(await db.TodoItems.AsNoTracking().ToListAsync());
-});
-
-todoGroup.MapGet("/{id:Guid}", async (Guid id, TodoDbContext db, ILogger<Program> logger) =>
-{
-    var todo = await db.TodoItems.FindAsync(id);
-    if (todo == null)
-    {
-        logger.LogWarning("Tarefa não encontrada: {Id}", id);
-        return Results.NotFound(new ErrorResponse
-        {
-            Timestamp = DateTime.UtcNow,
-            StatusCode = StatusCodes.Status404NotFound,
-            Message = "Tarefa não encontrada."
-        });
-    }
-
-    return Results.Ok(todo);
-});
-
-todoGroup.MapPost("/", async ([FromBody] TodoItemDto dto, TodoDbContext db) =>
-{
-    if (!dto.TryValidate(out var errors))
-    {
-        return Results.BadRequest(new ErrorResponse
-        {
-            Timestamp = DateTime.UtcNow,
-            StatusCode = StatusCodes.Status400BadRequest,
-            Message = "Validation failed",
-            Errors = errors
-        });
-    }
-
-    var todo = new TodoItem
-    {
-        Title = dto.Title,
-        IsDone = dto.IsDone
-    };
-
-    db.TodoItems.Add(todo);
-    await db.SaveChangesAsync();
-
-    return Results.Created($"/todo/{todo.Id}", todo);
-});
-
-todoGroup.MapPut("/{id:Guid}", async (Guid id, [FromBody] TodoItemDto dto, TodoDbContext db) =>
-{
-    if (!dto.TryValidate(out var errors))
-    {
-        return Results.BadRequest(new ErrorResponse
-        {
-            Timestamp = DateTime.UtcNow,
-            StatusCode = StatusCodes.Status400BadRequest,
-            Message = "Validation failed",
-            Errors = errors
-        });
-    }
-
-    var todo = await db.TodoItems.FindAsync(id);
-
-    if (todo == null)
-        return Results.NotFound(new ErrorResponse
-        {
-            Timestamp = DateTime.UtcNow,
-            StatusCode = StatusCodes.Status404NotFound,
-            Message = "Tarefa não encontrada."
-        });
-
-    todo.Title = dto.Title;
-    todo.IsDone = dto.IsDone;
-
-    await db.SaveChangesAsync();
-
-    return Results.Ok(todo);
-});
-
-todoGroup.MapDelete("/{id:Guid}", async (Guid id, TodoDbContext db) =>
-{
-    var todo = await db.TodoItems.FindAsync(id);
-
-    if (todo == null)
-        return Results.NotFound(new ErrorResponse
-        {
-            Timestamp = DateTime.UtcNow,
-            StatusCode = StatusCodes.Status404NotFound,
-            Message = "Tarefa não encontrada."
-        });
-
-    db.TodoItems.Remove(todo);
-    await db.SaveChangesAsync();
-
-    return Results.NoContent();
-});
+app.MapAuthEndpoints();
+app.MapTodoEndpoints();
 
 app.Run();

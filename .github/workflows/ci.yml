@@ -55,12 +55,41 @@ jobs:
           name: coverage-report
           path: ${{ env.TEST_PROJECT }}/${{ env.COVERAGE_DIR }}
 
-      # - name: Create Pull Request to main
-      #   uses: peter-evans/create-pull-request@v5
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     base: main
-      #     branch: ${{ github.head_ref || github.ref_name }}
-      #     title: "Merge ${{ github.head_ref || github.ref_name }} into main"
-      #     body: "This PR was automatically created by the CI workflow."
-      #     labels: automated-pr, feature
+      - name: Create Pull Request to main
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const head = context.payload.pull_request
+              ? context.payload.pull_request.head.ref
+              : context.ref.replace('refs/heads/', '');
+
+            const title = `Merge ${head} into main`;
+            const body  = 'This PR was automatically created by the CI workflow.';
+
+            try {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                head: head,
+                base: 'main',
+                body: body,
+              });
+
+              console.log(`✅ Pull Request criado: ${pr.html_url}`);
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['automated-pr', 'feature'],
+              });
+            } catch (error) {
+              if (error.status === 422) {
+                console.log('⚠️ Já existe um PR aberto dessa branch para main.');
+              } else {
+                throw error;
+              }
+            }
+

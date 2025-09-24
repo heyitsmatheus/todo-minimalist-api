@@ -11,7 +11,8 @@ public static class TodoEndpoints
 {
     public static IEndpointRouteBuilder MapTodoEndpoints(this IEndpointRouteBuilder routes)
     {
-        var todoGroup = routes.MapGroup("/todo");
+        var todoGroup = routes.MapGroup("/todo")
+            .RequireAuthorization();
 
         todoGroup.MapGet("/", async (TodoDbContext db, ILogger<Program> logger) =>
         {
